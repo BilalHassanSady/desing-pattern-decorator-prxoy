@@ -1,0 +1,70 @@
+using System;
+using System.Linq;
+using System.Collections.Generic;
+namespace test{		
+	
+	abstract class ISmsService{
+		public abstract string sendSms(string custId,string number,string sms);	
+	}
+	
+	class SmsService : ISmsService{
+		public override string sendSms(string custId,string number,string sms){
+			return " sms send from "+custId+" to "+number+" message :"+sms;
+		}
+	}
+	
+	class smsProxy : ISmsService{
+		private ISmsService sm;
+		Dictionary <string,int> Custname = new Dictionary<string,int>();
+		public smsProxy(){
+			if(sm==null){sm=new SmsService();}
+		}
+		public override string sendSms(string custId,string number,string sms){
+			if(!Custname.ContainsKey(custId))
+				{
+				 Custname.Add(custId,1);
+				 return sm.sendSms(custId,number,sms);
+				}
+			else{
+				var time = Custname.Where(x=>x.Key==custId).FirstOrDefault();	
+				if(time.Value > 2){return "not sent";}
+				else{
+					Custname[custId]=time.Value+1;
+					return sm.sendSms(custId,number,sms);
+				}
+			}
+		}
+	}
+	
+	
+	abstract class Decorator:ISmsService{
+		protected ISmsService sms;
+		public Decorator (ISmsService sm){
+			this.sms = sm;	
+		}
+		public override string sendSms(string custId,string number,string sms){
+			return this.sms.sendSms(custId,number,sms);
+		}
+	}
+	class DecoratorA : Decorator{
+		public DecoratorA(ISmsService sm):base(sm){}
+		
+		public override string sendSms(string custId,string number,string sms){
+			return "Notification Meassage sent from "+number + base.sendSms(custId,number,sms);	
+		}
+	}
+	
+	public class Program
+	{
+		public static void Main()
+		{
+			Console.WriteLine("Hello World");
+			smsProxy smsproxy = new smsProxy();
+			Decorator decorate = new DecoratorA(smsproxy);
+			Console.WriteLine(smsproxy.sendSms("123","111","hello"));
+			Console.WriteLine(decorate.sendSms("123","111","hello"));
+			Console.WriteLine(smsproxy.sendSms("123","111","hello"));
+			Console.WriteLine(smsproxy.sendSms("123","111","hello"));			
+		}
+	}
+}
